@@ -101,9 +101,14 @@ def _get_run_metadata_from_response(
     response: httpx.Response,
 ) -> RunCreateMetadata | None:
     """Extract run metadata from the response headers."""
-    if (content_location := response.headers.get("Content-Location")) and (
-        match := _RUN_METADATA_PATTERN.search(content_location)
-    ):
+    content_location = response.headers.get("Content-Location")
+    if not content_location:
+        return None
+    try:
+        path = urlparse(content_location).path
+    except ValueError:
+        return None
+    if match := _RUN_METADATA_PATTERN.search(path):
         return RunCreateMetadata(
             run_id=match.group("run_id"),
             thread_id=match.group("thread_id") or None,
